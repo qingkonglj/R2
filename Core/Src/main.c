@@ -39,6 +39,15 @@
 	PID_TypeDef rm3508_speed_pid[4];
 	PID_TypeDef rm3508_position_pid[4];
 
+typedef struct _reseive_TypeDef
+{
+float V_x;
+float V_y;
+float W;
+
+}_reseive_TypeDef;
+
+_reseive_TypeDef rx_motor;
 
 //PID_TypeDef rm3508_speed_pid[4] =
 //{
@@ -65,6 +74,10 @@
 /* USER CODE BEGIN PV */
 extern motor_measure_t motor_chassis[7];
 
+float a=1.4142135;
+float b=1.4142135;
+float l=400;
+float cal_target[4];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,6 +88,39 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void rx_motor_init()
+{
+		rx_motor.V_x=100;
+		rx_motor.V_y=-100;
+		rx_motor.W=0;
+
+}
+
+float V_calculate (i)
+{
+	float V;
+	
+	if(i == 0)
+	{
+		V=-rx_motor.V_x*a+rx_motor.V_y*b+l*rx_motor.W;
+	}
+	else if(i == 1)
+	{
+		V=-rx_motor.V_x*a-rx_motor.V_y*b+l*rx_motor.W;
+	}
+	else if(i == 2)
+	{
+		V=rx_motor.V_x*a-rx_motor.V_y*b+l*rx_motor.W;
+	}
+	else if(i ==3)
+	{
+		 V=rx_motor.V_x*a+rx_motor.V_y*b+l*rx_motor.W;
+	}
+		
+		return V;
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -116,16 +162,17 @@ int main(void)
   HAL_GPIO_WritePin(GPIOH , GPIO_PIN_4 , GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOH , GPIO_PIN_5 , GPIO_PIN_SET);
 
+
   for(int i = 0 ;i<4;i++ )
   	{
+		rx_motor_init();
 		pid_init(&rm3508_speed_pid[i]);
 	rm3508_speed_pid[i].f_param_init(&rm3508_speed_pid[i], PID_Speed, 
-								  16000,5000,0,0,800,0,1.48,0.039,0.1,PID_Integral_Limit  | PID_OutputFilter | PID_Derivative_On_Measurement | PID_DerivativeFilter);
-//	pid_init(&rm3508_position_pid[i]);
+								  16000,5000,0,0,800,V_calculate(i),1.48,0.039,0.1,PID_Integral_Limit  | PID_OutputFilter | PID_Derivative_On_Measurement | PID_DerivativeFilter);
+
+		//	pid_init(&rm3508_position_pid[i]);
 //	rm3508_position_pid[i].f_param_init(&rm3508_position_pid[i], PID_Position, 
 //								  16000,5000,0,0,800,0,0.056,0,0,PID_Integral_Limit);
-
-	
 	}
   
   
@@ -142,6 +189,7 @@ int main(void)
 		
 	  for(int i = 0; i<4 ; i ++)
 	  {
+		  rx_motor_init();
 		  rm3508_speed_pid[i].f_cal_pid(&rm3508_speed_pid[i], motor_chassis[i].speed_rpm);
   
 	  }
